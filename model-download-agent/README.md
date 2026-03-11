@@ -4,20 +4,34 @@
 This repo provides a minimal, reusable pattern for downloading model artifacts,
 writing `model_paths.env`, and preparing offline-friendly runs.
 
-## Installation
+This directory is an example template only. When adapting a real project, do
+not keep editing files in `model-download-agent/`. Copy the relevant logic into
+the target repository and create that repository's own `install.sh`,
+`download_models.py`, `requirements.txt`, and README updates there.
+
+## What Agents Should Do
+
+1. Read this example and the target repository's setup instructions.
+2. Copy the install and download pattern into the target repository.
+3. Generate new repo-local files as needed, instead of modifying this example.
+4. Adjust env names, dependency versions, downloads, and exported paths for the
+   target repository.
+
+## Example Usage
 ```bash
 ./install.sh
 ```
 
-## Usage
 ```bash
 python download_models.py
 source model_paths.env
 ```
 
 ## HPC Cluster Environment
-Use the login node for environment setup and initial downloads. The compute
-node can run fully offline or re-download if network access is allowed.
+In a real integration, run the copied workflow from the target repository, not
+from this example folder. Use the login node for environment setup and initial
+downloads. The compute node can run fully offline or re-download if network
+access is allowed.
 
 ### Login Node (setup + downloads)
 ```bash

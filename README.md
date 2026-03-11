@@ -1,11 +1,11 @@
-# cineca_agent
+# cineca-agent
 
 Utility repository for working on CINECA across login and compute nodes.
 
 ## Contents
 
 - `codex-gpu-bridge/`: login-node client and compute-node server for submitting GPU jobs to a compute node with per-run conda environment selection.
-- `model-download-agent/`: helper workflow for downloading model artifacts on the login node and preparing offline-friendly compute-node runs.
+- `model-download-agent/`: example/template workflow showing how to add install and model-download logic to another repository.
 
 ## GPU bridge
 
@@ -31,22 +31,15 @@ source codex-gpu-bridge/state/gpu-agent.client.env
 
 See `codex-gpu-bridge/README.md` and `codex-gpu-bridge/docs/architecture.md` for details.
 
-## Model download workflow
+## Model download template
 
-Use the login node for setup and downloads:
+`model-download-agent/` is an example only. Agents should not treat it as a shared working directory to customize per project.
 
-```bash
-cd model-download-agent
-./install.sh
-python download_models.py
-source model_paths.env
-```
+Instead, copy the relevant install and model-download logic from that example into the target repository, then create the target repo's own files such as:
 
-For offline compute-node runs:
+- `install.sh`
+- `download_models.py`
+- `requirements.txt`
+- `model_paths.env` generation logic
 
-```bash
-export HF_HUB_OFFLINE=1
-export TRANSFORMERS_OFFLINE=1
-```
-
-See `model-download-agent/README.md` and `model-download-agent/AGENT.md` for the full workflow.
+See `model-download-agent/README.md` and `model-download-agent/AGENT.md` for the template workflow and adaptation rules.

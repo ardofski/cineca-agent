@@ -1,7 +1,11 @@
 # AGENT.md
 
 ## Purpose
-This agent standardizes model download and offline-ready setup for a new repo.
+This agent provides an example pattern for model download and offline-ready
+setup for a new repo.
+
+Do not customize this example directory for each project. Instead, copy its
+logic into the target repository and create or update that repository's files.
 
 ## Responsibilities
 - Provide a `download_models.py` that:
@@ -14,8 +18,10 @@ This agent standardizes model download and offline-ready setup for a new repo.
   - Runs model downloads unless explicitly skipped.
 - Update `README.md` with an **HPC Cluster Environment** section.
 
+These outputs belong in the target repository, not in `model-download-agent/`.
+
 ## File Layout (Important)
-For this example template, keep these files in the same directory:
+For this example template, these files are kept in the same directory:
 - `AGENT.md`
 - `README.md`
 - `install.sh`
@@ -28,7 +34,7 @@ resolves paths via:
 - `python "${PROJECT_ROOT}/download_models.py" ...`
 - `python -m pip install -r "${PROJECT_ROOT}/requirements.txt"`
 
-If you copy this template to a new repo, keep the same co-located layout unless
+When copying this pattern to a new repo, keep the same co-located layout unless
 you also update all path logic in `install.sh`.
 
 ## Workflow (High-Level)
@@ -40,21 +46,24 @@ you also update all path logic in `install.sh`.
 5) On compute nodes, optionally re-run `download_models.py` if network is available.
 
 ## How to Use This Agent for a New Repo
-When you want to download and prepare a different repo, use this example as the
-template and update it based on that repo's README.
+When you need model download support for a different repo, use this directory as
+the reference template and implement the resulting files in the target repo.
 
 ### Required Updates (Always)
 - **download_models.py**
+  - Create this file in the target repository.
   - Replace `REQUIRED_REPOS` with the target repo's actual model repos.
   - Replace `DIRECT_DOWNLOADS` with any non-HF weights listed in the README.
   - Ensure `model_paths.env` exports match the target repo's expected variables.
   - Keep this file beside `install.sh` unless you also change `PROJECT_ROOT` usage.
 - **install.sh**
+  - Create this file in the target repository.
   - Match Python/PyTorch/CUDA versions from the target README.
   - Install all Python dependencies listed in the README.
   - If PyTorch3D is required, keep source-build flow and CUDA checks.
   - Keep this file beside `download_models.py` and `requirements.txt`.
 - **README.md**
+  - Update the target repository README, not this example README.
   - Keep the **HPC Cluster Environment** section, but change paths/examples to
     the target repo name.
   - Document whether compute nodes may re-download models or must be offline.
@@ -86,9 +95,9 @@ Optional knobs:
 
 ### Definition of Done
 - `download_models.py` runs end-to-end and writes `model_paths.env`.
-- `install.sh` finishes without manual steps on a login node.
+- `install.sh` in the target repo finishes without manual steps on a login node.
 - If enabled, PyTorch3D builds from source on a CUDA-capable node.
-- The target README still reads correctly with the new HPC section added.
+- The target repo README still reads correctly with the new HPC section added.
 
 ## Notes
 - Keep `model_paths.env` as the single source of truth for model locations.
