@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Editor and OS noise
+.DS_Store
+*.swp
+*.swo
+
+# GPU bridge runtime state and secrets
+codex-gpu-bridge/state/*.env
+codex-gpu-bridge/state/*.token
+codex-gpu-bridge/state/*.log
+codex-gpu-bridge/state/logs/
+codex-gpu-bridge/state/runs/
+
+# Generated environment handoff files
+*.env
+!.env.example
+!*/server.env.example
+
+# Model download artifacts
+model-download-agent/model_paths.env
+model-download-agent/cache/

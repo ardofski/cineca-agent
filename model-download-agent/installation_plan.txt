@@ -1,0 +1,113 @@
+Model Download Agent - HPC Installation Plan
+Repository: /leonardo_work/EUHPC_B29_018/agoktogan/projects/scene_generation/model-download-agent
+Date: 2026-02-20
+
+Goal
+- Fully functional installation when:
+  - Login node: internet access, no GPU
+  - Compute node: GPU access, no internet
+
+Readme/Script facts used
+- Standard install command: ./install.sh
+- install.sh creates conda env, installs CUDA toolkit + PyTorch + requirements, and runs download_models.py unless SKIP_DOWNLOADS=1.
+- download_models.py downloads:
+  - HF repos: black-forest-labs/FLUX.1-dev, openai/clip-vit-base-patch16
+  - Direct file: alexnet-owt-7be5be79.pth
+- model_paths.env is generated and must be sourced before runs.
+- Offline run vars from README: HF_HUB_OFFLINE=1, TRANSFORMERS_OFFLINE=1.
+- Optional PyTorch3D path in install.sh installs from Git source (requires internet and nvcc).
+
+Assumptions
+- Shared filesystem is visible from both login and compute nodes (common on HPC).
+- Conda/mamba is available as module or in PATH on login node.
+- If gated Hugging Face models are needed, HF_TOKEN is available.
+
+Plan A (Recommended): Shared filesystem workflow
+
+1) Login node: base environment + models (online)
+- cd /leonardo_work/EUHPC_B29_018/agoktogan/projects/scene_generation/model-download-agent
+- export ENV_NAME=hunyan3d
+- export HF_TOKEN=<your_token_if_needed>
+- ./install.sh
+
+Expected result
+- Conda env "hunyan3d" exists.
+- models downloaded under ./models.
+- cache created under ./cache/hf.
+- ./model_paths.env generated.
+
+2) Login node: verify installation artifacts
+- source model_paths.env
+- test -d "$PROJECT_MODELS_DIR" && echo "models ok"
+- test -d "$HF_HOME" && echo "hf cache ok"
+- python -c "import torch; import huggingface_hub; print(torch.__version__)"
+
+3) Compute node: offline runtime setup
+- source <conda init script>
+- conda activate hunyan3d
+- cd /leonardo_work/EUHPC_B29_018/agoktogan/projects/scene_generation/model-download-agent
+- source model_paths.env
+- export HF_HUB_OFFLINE=1
+- export TRANSFORMERS_OFFLINE=1
+
+4) Compute node: runtime smoke test
+- python -c "import os, torch; print('cuda_available=', torch.cuda.is_available()); print('models=', os.environ.get('PROJECT_MODELS_DIR'))"
+
+5) Submit jobs
+- In each job script, include:
+  - conda activate hunyan3d
+  - source /leonardo_work/EUHPC_B29_018/agoktogan/projects/scene_generation/model-download-agent/model_paths.env
+  - export HF_HUB_OFFLINE=1
+  - export TRANSFORMERS_OFFLINE=1
+
+Optional PyTorch3D (only if your downstream workload needs it)
+
+Important
+- install.sh PyTorch3D step uses: pip install git+https://github.com/facebookresearch/pytorch3d.git@<ref>
+- This requires internet at install time and nvcc for compilation.
+
+Preferred approach with your constraints
+1) Try building on login node if nvcc is available via module:
+- module load cuda/12.1   (or cluster-specific CUDA module)
+- INSTALL_PYTORCH3D=1 SKIP_DOWNLOADS=1 ./install.sh
+
+2) If login node cannot provide nvcc/toolchain, prefetch source on login and build offline on compute:
+- Login node (online):
+  - mkdir -p third_party
+  - git clone --depth 1 --branch stable https://github.com/facebookresearch/pytorch3d.git third_party/pytorch3d
+  - python -m pip download -d wheelhouse fvcore iopath
+- Compute node (offline, with nvcc/CUDA module):
+  - conda activate hunyan3d
+  - module load cuda/12.1   (or cluster-specific)
+  - python -m pip install --no-index --find-links wheelhouse fvcore iopath
+  - export FORCE_CUDA=1
+  - export TORCH_CUDA_ARCH_LIST=8.0   (set to your GPU arch)
+  - python -m pip install --no-build-isolation ./third_party/pytorch3d
+
+Plan B: No shared filesystem fallback
+- If compute node cannot see login-node files:
+  1) On login node, pack env and artifacts:
+     - conda activate hunyan3d
+     - python -m pip install conda-pack
+     - conda-pack -n hunyan3d -o hunyan3d.tar.gz
+     - tar czf hunyan3d-artifacts.tar.gz model_paths.env models cache
+  2) Transfer both tarballs to compute node storage.
+  3) On compute node, unpack and activate packed env, then source model_paths.env and set offline vars.
+
+Failure handling checklist
+- If HF download fails: verify HF_TOKEN and repo access permissions.
+- If torch install mismatch: confirm TORCH_CUDA_TAG, CUDA toolkit, and driver compatibility.
+- If offline runtime still tries internet: confirm HF_HUB_OFFLINE=1 and TRANSFORMERS_OFFLINE=1 are exported inside job environment.
+- If PyTorch3D build fails: check nvcc visibility, CUDA module, compiler availability (gcc/g++), and TORCH_CUDA_ARCH_LIST.
+
+Minimal reproducible command sequence (shared FS, no PyTorch3D)
+- Login node:
+  - cd /leonardo_work/EUHPC_B29_018/agoktogan/projects/scene_generation/model-download-agent
+  - export HF_TOKEN=<token_if_needed>
+  - ./install.sh
+- Compute node:
+  - conda activate hunyan3d
+  - cd /leonardo_work/EUHPC_B29_018/agoktogan/projects/scene_generation/model-download-agent
+  - source model_paths.env
+  - export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+  - python -c "import torch; print(torch.cuda.is_available())"
